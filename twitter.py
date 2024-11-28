@@ -1,7 +1,7 @@
 # For this code i am using selenium-stealth need to install with following command
 # pip install selenium-stealth  
 
-import csv
+# import csv
 from PIL import Image
 import pytesseract
 import re
@@ -15,6 +15,7 @@ from selenium.webdriver.chrome.options import Options
 import time
 import re
 from selenium.webdriver.support.ui import WebDriverWait
+import pymysql
 
 # Setup Chrome options
 options = Options()
@@ -78,19 +79,56 @@ else:
 # Extracting follower count using regex
 followers_match = re.search(r'(\d+[.,]?\d*K?) Followers', extracted_text)
 followers = followers_match.group(0) if followers_match else "Followers count not found"
-followers = "414.8K"
 # Displaying the results
 print("Extracted Bio:", bio_text)
 print("Extracted Follower Count:", followers)
 
-csv_filename = "twitter_data.csv"
-try:
-    with open(csv_filename, mode="w", newline="", encoding="utf-8") as file:
-        writer = csv.writer(file, quoting=csv.QUOTE_ALL)
-        # Write the header row
-        writer.writerow(["bio", "followers"])
-        # Write the data in separate columns
-        writer.writerow([bio_text, followers])
-    print(f"Data has been successfully saved to {csv_filename}")
-except IOError as e:
-    print(f"Error writing to CSV file: {e}")
+## store data in csv file
+# csv_filename = "twitter_data.csv"
+# try:
+#     with open(csv_filename, mode="w", newline="", encoding="utf-8") as file:
+#         writer = csv.writer(file, quoting=csv.QUOTE_ALL)
+#         # Write the header row
+#         writer.writerow(["bio", "followers"])
+#         # Write the data in separate columns
+#         writer.writerow([bio_text, followers])
+#     print(f"Data has been successfully saved to {csv_filename}")
+# except IOError as e:
+#     print(f"Error writing to CSV file: {e}")
+
+# store data in MySql database
+def connect_db():
+    conn = pymysql.connect(
+        host="127.1.0.0",
+        port=3366,
+        user="opt-root",
+        password="root",
+        db="twitter",
+        autocommit=True,
+    )
+    return conn
+
+connection = connect_db()
+cursor = connection.cursor()
+
+fields = [
+        "bio_text",
+        "followers"
+    ]
+fields = ",".join(fields)
+values = [
+    bio_text,
+    followers
+]
+
+table = "twitter_data"
+query = """
+    INSERT INTO twitter_data (bio_text, followers) 
+    VALUES (%s, %s)
+"""
+print(f"INSERT for {table} table## {query}")
+cursor.execute(query,values)
+id = cursor.lastrowid
+print(id)
+cursor.close()
+
